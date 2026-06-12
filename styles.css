@@ -4,8 +4,6 @@
     --text-muted: #64748B; 
     --primary-blue: #3B82F6;
     --primary-gradient: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
-    --gold: #F59E0B;
-    --gold-gradient: linear-gradient(135deg, #FBBF24 0%, #D97706 100%);
     
     --shadow-light: #1E293B; 
     --shadow-dark: #020617;  
@@ -36,10 +34,8 @@ body {
     display: flex; flex-direction: column; box-shadow: 0 0 40px rgba(0,0,0,0.5);
 }
 
-/* ИСПРАВЛЕНИЕ ДЛЯ IPHONE: Умный отступ сверху для защиты от "челки" */
 main { 
-    flex: 1; 
-    overflow-y: auto; 
+    flex: 1; overflow-y: auto; 
     padding: max(60px, env(safe-area-inset-top)) 24px 110px 24px; 
 }
 main::-webkit-scrollbar { display: none; }
@@ -65,11 +61,10 @@ main::-webkit-scrollbar { display: none; }
 }
 .btn-primary:active { transform: scale(0.97); box-shadow: 0 5px 10px rgba(59, 130, 246, 0.2); }
 
-/* ЭКРАН 1: АКТИВНОСТЬ */
+/* АКТИВНОСТЬ */
 .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
 .user-profile { display: flex; align-items: center; gap: 12px; }
 .avatar { width: 48px; height: 48px; background: linear-gradient(135deg, #1E293B, #334155); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 24px; box-shadow: var(--neu-out-sm); }
-.wallet-btn { width: 44px; height: 44px; background: var(--bg-color); border-radius: var(--radius-md); box-shadow: var(--neu-out); display: flex; justify-content: center; align-items: center; font-size: 18px; color: var(--text-dark); }
 
 .level-header { display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 10px; color: var(--text-dark); }
 .level-stats { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); }
@@ -93,47 +88,44 @@ main::-webkit-scrollbar { display: none; }
 .time-suffix { font-size: 14px; color: var(--text-muted); font-weight: 600; }
 .hint-text { font-size: 12px; color: var(--text-muted); text-align: center; margin-top: 10px; margin-bottom: 20px; }
 
-/* ЭКРАН 2: МАГАЗИН */
-.shop-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-.shop-header h1 { font-style: italic; font-weight: 800; font-size: 22px; color: var(--text-muted); text-transform: uppercase; }
-.coin-badge { background: var(--bg-color); box-shadow: var(--neu-in); padding: 8px 16px; border-radius: 20px; display: flex; gap: 8px; font-weight: 700; color: var(--text-dark); }
-.coin-icon { color: var(--gold); }
+/* ИСТОРИЯ И АНАЛИТИКА (НОВЫЙ ДИЗАЙН) */
+.history-controls { margin-bottom: 20px; }
+.history-select {
+    width: 100%; padding: 12px 16px; background: var(--bg-color);
+    border: 1px solid var(--primary-blue); border-radius: 8px;
+    color: var(--text-dark); font-size: 14px; font-weight: 600; outline: none;
+    box-shadow: var(--neu-out-sm);
+}
 
-.shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.shop-item-card { background: var(--bg-color); border-radius: var(--radius-lg); box-shadow: var(--neu-out); padding: 12px; display: flex; flex-direction: column; }
-.shop-item-card.full-width { grid-column: 1 / -1; flex-direction: row; align-items: center; gap: 16px; }
+.date-header { font-size: 16px; font-weight: 600; margin: 24px 0 12px 0; color: var(--text-dark); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;}
 
-.item-img { width: 100%; height: 120px; border-radius: var(--radius-md); margin-bottom: 12px; display: flex; justify-content: center; align-items: center; font-size: 48px; box-shadow: var(--neu-in); }
-.img-hookah { background: linear-gradient(135deg, #1E293B, #0F172A); }
-.img-sweets { background: linear-gradient(135deg, #4C0519, #9F1239); }
-.img-relax { background: linear-gradient(135deg, #0C4A6E, #0369A1); width: 100px; height: 100px; margin-bottom: 0;}
-
-.badge-tag { background: var(--gold-gradient); color: white; font-size: 10px; font-weight: 700; padding: 4px 8px; border-radius: 4px; text-align: center; margin-bottom: 8px; }
-.item-title { font-size: 14px; font-weight: 800; margin-bottom: 4px; text-transform: uppercase; color: var(--text-dark); }
-.item-desc { font-size: 11px; color: var(--text-muted); margin-bottom: 12px; flex: 1;}
-
-.btn-buy { width: 100%; padding: 10px; border: none; border-radius: 8px; background: var(--bg-color); box-shadow: var(--neu-out-sm); font-size: 12px; font-weight: 600; cursor: pointer; color: var(--text-dark); }
-.btn-buy:active { box-shadow: var(--neu-in); }
-
-/* ЭКРАН 3: ИСТОРИЯ */
-.date-header { font-size: 16px; font-weight: 600; margin: 24px 0 12px 0; color: var(--text-dark); }
+/* Карточка одиночного действия */
 .history-card { background: var(--bg-color); border-radius: var(--radius-md); box-shadow: var(--neu-out); padding: 16px; margin-bottom: 16px; position: relative; overflow: hidden; }
-.history-card.color-blue::before { content: ''; position: absolute; inset: 0; background: rgba(59, 130, 246, 0.1); }
-.history-card.color-gold::before { content: ''; position: absolute; inset: 0; background: rgba(245, 158, 11, 0.1); }
-
+.history-card::before { content: ''; position: absolute; inset: 0; background: rgba(59, 130, 246, 0.05); }
 .history-top { display: flex; justify-content: space-between; margin-bottom: 12px; position: relative; z-index: 1;}
 .history-title-wrap { display: flex; align-items: center; gap: 12px; }
-.history-icon { width: 40px; height: 40px; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 18px; box-shadow: var(--neu-in); }
+.history-icon { width: 40px; height: 40px; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 18px; box-shadow: var(--neu-in); color: var(--primary-blue); }
 .history-title { font-size: 16px; font-weight: 700; color: var(--text-dark); }
 .history-desc { font-size: 12px; color: var(--text-muted); }
 .history-time { font-size: 14px; font-weight: 500; color: var(--text-dark); }
 .history-bottom { display: flex; justify-content: space-between; font-size: 13px; position: relative; z-index: 1; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px; color: var(--text-muted);}
 .history-val { font-weight: 600; color: var(--text-dark); }
-.history-gain { font-weight: 700; }
-.gain-xp { color: var(--primary-blue); }
-.gain-coins { color: var(--gold); }
+.gain-xp { font-weight: 700; color: var(--primary-blue); }
 
-/* ЭКРАН 4: АНАЛИТИКА */
+/* Карточка Агрегации (Дни/Недели/Месяцы) */
+.agg-card {
+    background: var(--bg-color); border-radius: var(--radius-md);
+    box-shadow: var(--neu-out); padding: 16px; margin-bottom: 16px;
+}
+.agg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.agg-title { font-size: 16px; font-weight: 700; color: var(--primary-blue); }
+.agg-xp { font-weight: 800; font-size: 16px; color: var(--text-dark); }
+.agg-total-time { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; font-weight: 600; }
+.agg-skills-list { display: flex; flex-direction: column; gap: 8px; }
+.agg-skill-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-dark); }
+.agg-skill-name { display: flex; align-items: center; gap: 8px; color: var(--text-muted); }
+
+/* ПРОГРЕСС */
 .skills-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
 .skill-card { background: var(--bg-color); border-radius: var(--radius-md); box-shadow: var(--neu-out); padding: 16px; }
 .skill-card.global { background: var(--primary-gradient); color: white; grid-column: 1 / -1; }
@@ -146,7 +138,6 @@ main::-webkit-scrollbar { display: none; }
 .skill-card.global .skill-name { color: white; }
 .skill-lvl { font-size: 16px; font-weight: 800; color: var(--text-dark);}
 .skill-card.global .skill-lvl { color: white; }
-.text-muted { font-size: 10px; color: var(--text-muted); margin-top: 4px;}
 
 /* НАВИГАЦИЯ */
 #bottom-nav {
@@ -155,7 +146,7 @@ main::-webkit-scrollbar { display: none; }
     display: flex; justify-content: space-around; align-items: center;
     border-radius: 30px 30px 0 0; padding-bottom: 15px; z-index: 100;
 }
-.nav-item { display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--text-muted); font-size: 10px; font-weight: 600; cursor: pointer; transition: 0.3s; width: 60px; }
+.nav-item { display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--text-muted); font-size: 10px; font-weight: 600; cursor: pointer; transition: 0.3s; width: 80px; }
 .nav-item i { font-size: 20px; transition: 0.3s; }
 .nav-item.active { color: var(--primary-blue); }
 .nav-item.active i { transform: translateY(-4px) scale(1.1); }
