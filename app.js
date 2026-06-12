@@ -4,14 +4,14 @@
 const DB_KEY = 'liferpg_nexus_state_v5';
 
 const defaultState = {
-    user: { name: "Андрей", globalLevel: 1, xp: 0, xpMax: 100, coins: 0 },
+    user: { name: "Андрей", globalLevel: 1, xp: 0, xpMax: 100, coins: 0, totalMins: 0 },
     currentInput: { skill: "Спорт", mins: 15 },
     skills: {
-        "Спорт": { level: 1, xpEarned: 0, icon: "fa-dumbbell" },
-        "Чтение книг": { level: 1, xpEarned: 0, icon: "fa-book-open" },
-        "Английский язык": { level: 1, xpEarned: 0, icon: "fa-language" },
-        "Вождение": { level: 1, xpEarned: 0, icon: "fa-car" },
-        "Работа за ПК": { level: 1, xpEarned: 0, icon: "fa-desktop" },
+        "Спорт": { level: 1, xpEarned: 0, icon: "fa-dumbbell", mins: 0 },
+        "Чтение книг": { level: 1, xpEarned: 0, icon: "fa-book-open", mins: 0 },
+        "Английский язык": { level: 1, xpEarned: 0, icon: "fa-language", mins: 0 },
+        "Вождение": { level: 1, xpEarned: 0, icon: "fa-car", mins: 0 },
+        "Работа за ПК": { level: 1, xpEarned: 0, icon: "fa-desktop", mins: 0 },
     },
     history: [
         { id: 1, dateStr: "Системный лог", items: [
@@ -24,9 +24,11 @@ const defaultState = {
 // Загрузка памяти при старте
 let state = JSON.parse(localStorage.getItem(DB_KEY)) || defaultState;
 
-// Если в старой базе было старое имя, принудительно обновляем под Андрея
-if (state.user.name !== "Андрей") {
-    state.user.name = "Андрей";
+// Миграция старых данных (чтобы не сломать игру, если ты уже прокачался)
+if (state.user.name !== "Андрей") state.user.name = "Андрей";
+if (state.user.totalMins === undefined) state.user.totalMins = 0;
+for (let sk in state.skills) {
+    if (state.skills[sk].mins === undefined) state.skills[sk].mins = 0;
 }
 
 // Функция жесткого сохранения прогресса
@@ -53,30 +55,32 @@ function commitAction() {
     const skillName = document.getElementById('skill-selector').value;
     state.currentInput.skill = skillName;
     
-    // Формула генерации XP (Математика Архитектора)
+    // Формула генерации XP
     const earnedXP = Math.floor(mins * 0.8); 
     
-    // ЭКОНОМИЧЕСКАЯ РЕФОРМА: Монеты даются сразу и прямо пропорционально опыту (1 XP = 1 Монета)
+    // ЭКОНОМИКА И ВРЕМЯ
     state.user.coins += earnedXP;
-
+    state.user.totalMins += mins; // Сохраняем глобальное время
+    
     // Вектор 1: Прогресс Глобального уровня
     state.user.xp += earnedXP;
     if (state.user.xp >= state.user.xpMax) {
         state.user.globalLevel += 1;
         state.user.xp = state.user.xp - state.user.xpMax;
-        state.user.xpMax = state.user.globalLevel * 100; // Усложнение прогрессии
-        state.user.coins += 100; // Дополнительный бонус за левелап сохранен
+        state.user.xpMax = state.user.globalLevel * 100;
+        state.user.coins += 100;
         alert(`⚡ LEVEL UP!\nДостигнут Уровень ${state.user.globalLevel}. Награда: +100 бонусных монет!`);
     }
 
     // Вектор 2: Локальный навык
-    if(!state.skills[skillName]) state.skills[skillName] = { level: 1, xpEarned: 0, icon: "fa-bolt" };
+    if(!state.skills[skillName]) state.skills[skillName] = { level: 1, xpEarned: 0, icon: "fa-bolt", mins: 0 };
     state.skills[skillName].xpEarned += earnedXP;
+    state.skills[skillName].mins += mins; // Сохраняем локальное время
     
     if(state.skills[skillName].xpEarned >= 100) {
         state.skills[skillName].level += 1;
-        state.skills[skillName].xpEarned = 0;
-        state.user.coins += 25; // Дополнительный бонус за уровень навыка
+        state.skills[skillName].xpEarned -= 100; // Исправлено для переноса остатка XP
+        state.user.coins += 25; 
     }
 
     // Запись в Журнал
@@ -121,7 +125,6 @@ function buyReward(itemName, cost) {
             time: timeStr, cost: cost, theme: "color-gold"
         });
 
-        // СОХРАНЕНИЕ ПАМЯТИ
         saveState();
         alert(`✅ Покупка успешна: ${itemName}.`);
         render();
@@ -130,7 +133,7 @@ function buyReward(itemName, cost) {
     }
 }
 
-// Защищенный скрипт навигации (Без багов на Safari)
+// Защищенный скрипт навигации
 function switchTab(tabId) {
     state.activeTab = tabId;
     document.querySelectorAll('.nav-item').forEach(el => {
@@ -146,6 +149,9 @@ function switchTab(tabId) {
 
 function getProgressPct() { return Math.min(100, (state.user.xp / state.user.xpMax) * 100); }
 function formatTime(mins) { return `${mins} мин = ${Math.floor(mins/60)}ч ${mins%60}мин`; }
+
+// Компактный формат для карточек прогресса
+function formatTimeShort(mins) { return `${Math.floor(mins/60)}ч ${mins%60}мин`; }
 
 function render() {
     const root = document.getElementById('view-root');
@@ -173,7 +179,7 @@ function renderActivity() {
         </div>
         <h2 class="title-h1">Запись активности</h2>
         <div class="input-wrap">
-            <label class="input-label">Категория активности (Кликабельно)</label>
+            <label class="input-label">Категория активности</label>
             <select id="skill-selector" class="neu-select" onchange="state.currentInput.skill = this.value">${opts}</select>
         </div>
         <div class="input-wrap">
@@ -217,7 +223,8 @@ function renderShop() {
 }
 
 function renderHistory() {
-    let html = `<h1 class="title-h1" style="text-align:center">Журнал аудита</h1>`;
+    // ЗАГОЛОВОК ИЗМЕНЕН ПО ТРЕБОВАНИЮ
+    let html = `<h1 class="title-h1" style="text-align:center; font-size: 20px;">История действий и покупок</h1>`;
     state.history.forEach(group => {
         html += `<div class="date-header">${group.dateStr}</div>`;
         group.items.forEach(item => {
@@ -232,14 +239,33 @@ function renderHistory() {
 }
 
 function renderProgress() {
-    let html = `<h1 class="title-h1" style="text-align:center; font-size:16px;">ПРОГРЕСС И АНАЛИТИКА</h1><div class="skills-grid"><div class="skill-card global"><div class="skill-header"><span class="skill-name">Общий Уровень 🥇</span></div><div class="skill-lvl">Lvl ${state.user.globalLevel}</div><div class="progress-track"><div class="progress-fill" style="width: ${getProgressPct()}%"></div></div></div>`;
+    // ДОБАВЛЕНО ОБЩЕЕ ВРЕМЯ РАЗВИТИЯ
+    let html = `<h1 class="title-h1" style="text-align:center; font-size:16px;">ПРОГРЕСС И АНАЛИТИКА</h1>
+    <div class="skills-grid">
+        <div class="skill-card global">
+            <div class="skill-header">
+                <span class="skill-name">Общий Уровень 🥇</span>
+            </div>
+            <div class="skill-lvl">Lvl ${state.user.globalLevel}</div>
+            <div class="progress-track"><div class="progress-fill" style="width: ${getProgressPct()}%"></div></div>
+            <div style="font-size:12px; margin-top:8px; opacity:0.9;">Общее время развития: <strong style="color:#FFF;">${formatTimeShort(state.user.totalMins)}</strong></div>
+        </div>`;
     
     const colors = ["#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#EC4899"];
     let i = 0;
     for(let sk in state.skills) {
         let p = state.skills[sk];
         let c = colors[i % colors.length];
-        html += `<div class="skill-card"><div class="skill-header"><span class="skill-name" style="font-size:10px;"><i class="fa-solid ${p.icon}" style="color:${c}"></i> ${sk}</span><span class="skill-lvl text-muted" style="margin:0">Lvl ${p.level}</span></div><div class="progress-track" style="height:4px"><div class="progress-fill" style="width:${p.xpEarned}%; background:${c}"></div></div></div>`;
+        // ДОБАВЛЕНО ЛОКАЛЬНОЕ ВРЕМЯ В КАРТОЧКУ НАВЫКА
+        html += `
+        <div class="skill-card">
+            <div class="skill-header">
+                <span class="skill-name" style="font-size:10px;"><i class="fa-solid ${p.icon}" style="color:${c}"></i> ${sk}</span>
+                <span class="skill-lvl text-muted" style="margin:0">Lvl ${p.level}</span>
+            </div>
+            <div class="progress-track" style="height:4px"><div class="progress-fill" style="width:${p.xpEarned}%; background:${c}"></div></div>
+            <div class="text-muted" style="margin-top:8px; font-weight:500;">Время: <span style="color:var(--text-dark)">${formatTimeShort(p.mins)}</span></div>
+        </div>`;
         i++;
     }
     html += `</div>`;
@@ -250,7 +276,7 @@ function renderProgress() {
 window.onload = () => { render(); };
 
 // ==========================================
-// 4. ИНТЕГРАЦИЯ PWA (ДЛЯ УСТАНОВКИ НА IPHONE)
+// 4. ИНТЕГРАЦИЯ PWA
 // ==========================================
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/life-rpg/sw.js')
