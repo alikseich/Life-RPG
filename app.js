@@ -1,6 +1,8 @@
 // ==========================================
-// 1. БАЗА ДАННЫХ И ПАМЯТЬ СИСТЕМЫ
+// 1. БАЗА ДАННЫХ, ПАМЯТЬ И ОБЛАЧНАЯ СИНХРОНИЗАЦИЯ
 // ==========================================
+const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbxuRLQIbcytnHTnYiGUtfoo6OBPf73wxsidUE3a9N1RY8Kie_6We-YoE2UGOIerA8u-ag/exec";
+
 const DB_KEY = 'liferpg_nexus_state_v6';
 
 const defaultState = {
@@ -13,39 +15,65 @@ const defaultState = {
         "Вождение": { level: 1, xpEarned: 0, icon: "fa-car", mins: 0 },
         "Работа за ПК": { level: 1, xpEarned: 0, icon: "fa-desktop", mins: 0 },
     },
-    history: [], // Изменено на плоский массив всех действий
+    history: [],
     activeTab: 'activity',
-    historyFilter: 'actions' // 'actions', 'days', 'weeks', 'months'
+    historyFilter: 'actions'
 };
 
+// 1. Сначала загружаем локальную память (чтобы интерфейс открылся мгновенно)
 let state = JSON.parse(localStorage.getItem(DB_KEY)) || defaultState;
 
-// Скрипт миграции старых данных (Чистка от монет и магазина)
-if (state.user.coins !== undefined) delete state.user.coins;
-if (!Array.isArray(state.history) || (state.history.length > 0 && state.history[0].dateStr)) {
-    // Конвертация старой структуры истории в новую плоскую с таймстемпами
-    let flatHistory = [];
-    state.history.forEach(group => {
-        if(group.items) {
-            group.items.forEach(item => {
-                if (item.type === 'action') {
-                    if(!item.timestamp) item.timestamp = Date.now(); // Присваиваем текущее время старым записям
-                    flatHistory.push(item);
-                }
-            });
-        }
-    });
-    state.history = flatHistory;
+// 2. Функция миграции данных
+function runMigrations() {
+    if (state.user.name !== "Андрей") state.user.name = "Андрей";
+    if (state.user.totalMins === undefined) state.user.totalMins = 0;
+    for (let sk in state.skills) {
+        if (state.skills[sk].mins === undefined) state.skills[sk].mins = 0;
+    }
+    if (state.user.coins !== undefined) delete state.user.coins;
 }
-if(!state.historyFilter) state.historyFilter = 'actions';
+runMigrations();
 
+// 3. Фоновая синхронизация с ОБЛАКОМ при запуске
+async function syncWithCloud() {
+    try {
+        let response = await fetch(CLOUD_API_URL);
+        let cloudData = await response.json();
+        
+        // Сравниваем, где больше наиграно времени (защита от затирания)
+        let localTime = state.user.totalMins || 0;
+        let cloudTime = (cloudData && cloudData.user) ? (cloudData.user.totalMins || 0) : 0;
+        
+        if (cloudTime > localTime) {
+            state = cloudData;
+            runMigrations();
+            localStorage.setItem(DB_KEY, JSON.stringify(state));
+            console.log("☁️ Данные успешно подтянуты из облака");
+            render(); // Перерисовываем интерфейс с новыми данными
+        }
+    } catch (error) {
+        console.log("⚠️ Облако недоступно. Работа в офлайн-режиме.");
+    }
+}
+syncWithCloud();
+
+// 4. Двойное сохранение: Локально + Фоном в Облако
 function saveState() {
+    // Мгновенное сохранение на телефон
     localStorage.setItem(DB_KEY, JSON.stringify(state));
+    
+    // Тихая отправка в Google Drive
+    fetch(CLOUD_API_URL, {
+        method: 'POST',
+        body: JSON.stringify(state),
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' } 
+    }).catch(e => console.log("⚠️ Нет сети. Данные сохранены только локально."));
 }
 
 // ==========================================
 // 2. БИЗНЕС-ЛОГИКА (CORE GAMEPLAY)
 // ==========================================
+// ... (ВЕСЬ ОСТАЛЬНОЙ ТВОЙ КОД ОСТАЕТСЯ БЕЗ ИЗМЕНЕНИЙ ДО САМОГО НИЗА) ...
 
 function updateTime(delta) {
     let newMins = state.currentInput.mins + delta;
