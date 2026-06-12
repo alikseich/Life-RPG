@@ -20,27 +20,43 @@ const defaultState = {
     historyFilter: 'actions'
 };
 
-// 1. Сначала загружаем локальную память (чтобы интерфейс открылся мгновенно)
 let state = JSON.parse(localStorage.getItem(DB_KEY)) || defaultState;
 
-// 2. Функция миграции данных
 function runMigrations() {
     if (state.user.name !== "Андрей") state.user.name = "Андрей";
     if (state.user.totalMins === undefined) state.user.totalMins = 0;
     for (let sk in state.skills) {
         if (state.skills[sk].mins === undefined) state.skills[sk].mins = 0;
     }
+    // Жесткое удаление монет, так как экономика магазина упразднена
     if (state.user.coins !== undefined) delete state.user.coins;
+    
+    // Миграция старой истории в новый плоский формат для аналитики
+    if (!Array.isArray(state.history) || (state.history.length > 0 && state.history[0].dateStr)) {
+        let flatHistory = [];
+        state.history.forEach(group => {
+            if(group.items) {
+                group.items.forEach(item => {
+                    if (item.type === 'action') {
+                        if(!item.timestamp) item.timestamp = Date.now();
+                        flatHistory.push(item);
+                    }
+                });
+            }
+        });
+        state.history = flatHistory;
+    }
+    if(!state.historyFilter) state.historyFilter = 'actions';
 }
 runMigrations();
 
-// 3. Фоновая синхронизация с ОБЛАКОМ при запуске
+// Автоматическая фоновая подгрузка из Google Drive
 async function syncWithCloud() {
     try {
         let response = await fetch(CLOUD_API_URL);
         let cloudData = await response.json();
         
-        // Сравниваем, где больше наиграно времени (защита от затирания)
+        // Сравнение времени: берем базу оттуда, где прогресс больше
         let localTime = state.user.totalMins || 0;
         let cloudTime = (cloudData && cloudData.user) ? (cloudData.user.totalMins || 0) : 0;
         
@@ -49,7 +65,7 @@ async function syncWithCloud() {
             runMigrations();
             localStorage.setItem(DB_KEY, JSON.stringify(state));
             console.log("☁️ Данные успешно подтянуты из облака");
-            render(); // Перерисовываем интерфейс с новыми данными
+            render(); 
         }
     } catch (error) {
         console.log("⚠️ Облако недоступно. Работа в офлайн-режиме.");
@@ -57,12 +73,10 @@ async function syncWithCloud() {
 }
 syncWithCloud();
 
-// 4. Двойное сохранение: Локально + Фоном в Облако
+// Сохранение и отправка на сервер
 function saveState() {
-    // Мгновенное сохранение на телефон
     localStorage.setItem(DB_KEY, JSON.stringify(state));
     
-    // Тихая отправка в Google Drive
     fetch(CLOUD_API_URL, {
         method: 'POST',
         body: JSON.stringify(state),
@@ -73,7 +87,6 @@ function saveState() {
 // ==========================================
 // 2. БИЗНЕС-ЛОГИКА (CORE GAMEPLAY)
 // ==========================================
-// ... (ВЕСЬ ОСТАЛЬНОЙ ТВОЙ КОД ОСТАЕТСЯ БЕЗ ИЗМЕНЕНИЙ ДО САМОГО НИЗА) ...
 
 function updateTime(delta) {
     let newMins = state.currentInput.mins + delta;
@@ -92,7 +105,6 @@ function commitAction() {
     
     const earnedXP = Math.floor(mins * 0.8); 
     
-    // ВРЕМЯ И ОПЫТ
     state.user.totalMins += mins;
     state.user.xp += earnedXP;
     
@@ -112,7 +124,6 @@ function commitAction() {
         state.skills[skillName].xpEarned -= 100;
     }
 
-    // Добавление новой записи в историю
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     
@@ -123,13 +134,13 @@ function commitAction() {
         time: timeStr,
         mins: mins,
         xp: earnedXP,
-        timestamp: now.getTime() // Точная метка времени для аналитики
+        timestamp: now.getTime()
     });
 
     saveState();
 
     const feedback = document.getElementById('action-feedback');
-    feedback.innerHTML = `Начислено: <strong>+${earnedXP} XP</strong>. Записано.`;
+    feedback.innerHTML = `Начислено: <strong>+${earnedXP} XP</strong>. Записано в облако.`;
     feedback.style.color = "#10B981";
     
     state.currentInput.mins = 15; 
@@ -137,7 +148,7 @@ function commitAction() {
 }
 
 function switchTab(tabId) {
-    if (tabId === 'shop') tabId = 'activity'; // На случай кэшированных кликов
+    if (tabId === 'shop') tabId = 'activity'; // На случай, если в кэше завис старый клик
     state.activeTab = tabId;
     document.querySelectorAll('.nav-item').forEach(el => {
         el.classList.remove('active');
@@ -159,7 +170,6 @@ function setHistoryFilter(val) {
 function getWeekKey(dateObj) {
     const d = new Date(dateObj);
     d.setHours(0,0,0,0);
-    // Находим понедельник текущей недели
     const day = d.getDay() || 7; 
     d.setDate(d.getDate() - day + 1);
     
@@ -255,7 +265,6 @@ function renderActivity() {
 function renderHistory() {
     let html = `<h1 class="title-h1" style="text-align:center; font-size: 20px;">История действий</h1>`;
     
-    // Блок управления фильтрами
     html += `
     <div class="history-controls">
         <select class="history-select" onchange="setHistoryFilter(this.value)">
@@ -267,10 +276,8 @@ function renderHistory() {
     </div>`;
 
     if (state.historyFilter === 'actions') {
-        // Отрисовка стокового списка действий
         if(state.history.length === 0) return html + `<div style="text-align:center; color:gray; margin-top:40px;">История пуста</div>`;
         
-        // Группировка чисто визуально по дате (как было)
         let lastDate = "";
         state.history.forEach(item => {
             let d = new Date(item.timestamp);
@@ -295,9 +302,8 @@ function renderHistory() {
             </div>`;
         });
     } else {
-        // Отрисовка агрегации (Дни/Недели/Месяцы)
         const groups = aggregateHistory(state.historyFilter);
-        const keys = Object.keys(groups); // Сортировка не идеальна, но ключи идут в порядке добавления
+        const keys = Object.keys(groups); 
         
         if(keys.length === 0) return html + `<div style="text-align:center; color:gray; margin-top:40px;">Нет данных</div>`;
 
