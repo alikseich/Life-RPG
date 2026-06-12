@@ -1,32 +1,23 @@
-const CACHE_NAME = 'liferpg-nexus-v3';
-const ASSETS = [
-  '/life-rpg/index.html',
-  '/life-rpg/manifest.json'
-];
+const CACHE_NAME = 'liferpg-nexus-v4';
 
-// Установка кэша
+// Установка: не ждем, активируем сразу
 self.addEventListener('install', event => {
   self.skipWaiting();
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(ASSETS);
-    })
-  );
 });
 
-// Активация и чистка старого мусора (ошибок из прошлых версий)
+// Активация: Убиваем абсолютно все старые кэши, чтобы не было белых экранов
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys => {
+    caches.keys().then(cacheNames => {
       return Promise.all(
-        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+        cacheNames.map(cache => caches.delete(cache))
       );
     })
   );
   self.clients.claim();
 });
 
-// Умный перехват трафика: сначала Сеть (чтобы получать обновы), потом Кэш
+// Запрос сети: Всегда идем в интернет за свежим кодом
 self.addEventListener('fetch', event => {
   event.respondWith(
     fetch(event.request).catch(() => {
