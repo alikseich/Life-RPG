@@ -1,13 +1,13 @@
 {
   "name": "LifeRPG Nexus",
-  "short_name": "Nexus OS",
-  "description": "Нейробиологический экзоскелет дисциплины Архитектора",
+  "short_name": "Nexus",
+  "description": "Персональный трекер Архитектора",
   "start_url": "/life-rpg/index.html",
   "scope": "/life-rpg/",
   "display": "standalone",
-  "background_color": "#07070b",
-  "theme_color": "#00ffcc",
-  "orientation": "portrait-primary",
+  "background_color": "#F0F4F8",
+  "theme_color": "#3B82F6",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "icon.png",
