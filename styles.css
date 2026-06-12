@@ -1,18 +1,20 @@
 :root {
-    --bg-color: #F0F4F8;
-    --text-dark: #1E293B;
-    --text-muted: #64748B;
+    /* Переключение палитры на глубокий космос */
+    --bg-color: #0F172A; /* Slate 900 */
+    --text-dark: #F8FAFC; /* Slate 50 */
+    --text-muted: #64748B; /* Slate 500 */
     --primary-blue: #3B82F6;
-    --primary-gradient: linear-gradient(135deg, #60A5FA 0%, #2563EB 100%);
+    --primary-gradient: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
     --gold: #F59E0B;
-    --gold-gradient: linear-gradient(135deg, #FCD34D 0%, #F59E0B 100%);
+    --gold-gradient: linear-gradient(135deg, #FBBF24 0%, #D97706 100%);
     
-    --shadow-light: #FFFFFF;
-    --shadow-dark: #D1D9E6;
+    /* Математика теней под темную тему */
+    --shadow-light: #1E293B; /* Slate 800 (Мягкий свет сверху) */
+    --shadow-dark: #020617;  /* Slate 950 (Глубокая тень снизу) */
     
-    --neu-out: 8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light);
+    --neu-out: 6px 6px 14px var(--shadow-dark), -6px -6px 14px var(--shadow-light);
     --neu-out-sm: 4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);
-    --neu-in: inset 6px 6px 12px var(--shadow-dark), inset -6px -6px 12px var(--shadow-light);
+    --neu-in: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light);
     
     --radius-lg: 20px;
     --radius-md: 12px;
@@ -25,7 +27,7 @@
 }
 
 body {
-    background-color: var(--bg-color); color: var(--text-dark);
+    background-color: #020617; color: var(--text-dark);
     display: flex; justify-content: center; align-items: center;
     min-height: 100vh; overflow: hidden;
 }
@@ -33,14 +35,14 @@ body {
 #app-container {
     width: 100%; max-width: 414px; height: 100vh; max-height: 896px;
     background-color: var(--bg-color); position: relative;
-    display: flex; flex-direction: column; box-shadow: 0 0 40px rgba(0,0,0,0.1);
+    display: flex; flex-direction: column; box-shadow: 0 0 40px rgba(0,0,0,0.5);
 }
 
 main { flex: 1; overflow-y: auto; padding: 24px; padding-bottom: 110px; }
 main::-webkit-scrollbar { display: none; }
 
-.title-h1 { font-size: 24px; font-weight: 800; margin-bottom: 20px; }
-.title-h2 { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+.title-h1 { font-size: 24px; font-weight: 800; margin-bottom: 20px; color: var(--text-dark); }
+.title-h2 { font-size: 16px; font-weight: 600; margin-bottom: 12px; color: var(--text-dark); }
 
 .neu-card {
     background: var(--bg-color); border-radius: var(--radius-lg);
@@ -63,30 +65,39 @@ main::-webkit-scrollbar { display: none; }
 /* ЭКРАН 1: АКТИВНОСТЬ */
 .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
 .user-profile { display: flex; align-items: center; gap: 12px; }
-.avatar { width: 48px; height: 48px; background: linear-gradient(135deg, #A7F3D0, #34D399); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 24px; box-shadow: var(--neu-out-sm); }
-.wallet-btn { width: 44px; height: 44px; background: var(--bg-color); border-radius: var(--radius-md); box-shadow: var(--neu-out); display: flex; justify-content: center; align-items: center; font-size: 18px; }
+.avatar { width: 48px; height: 48px; background: linear-gradient(135deg, #1E293B, #334155); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 24px; box-shadow: var(--neu-out-sm); }
+.wallet-btn { width: 44px; height: 44px; background: var(--bg-color); border-radius: var(--radius-md); box-shadow: var(--neu-out); display: flex; justify-content: center; align-items: center; font-size: 18px; color: var(--text-dark); }
 
-.level-header { display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 10px;}
+.level-header { display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 10px; color: var(--text-dark); }
 .level-stats { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); }
 
 .input-wrap { margin-bottom: 20px; }
-.input-label { font-size: 14px; margin-bottom: 8px; display: block; }
+.input-label { font-size: 14px; margin-bottom: 8px; display: block; color: var(--text-muted); font-weight: 500; }
+
+/* Кастомизация Кликабельного Селектора */
 .neu-select {
-    width: 100%; padding: 16px; background: var(--bg-color); border: none;
-    border-radius: var(--radius-md); box-shadow: var(--neu-out); font-size: 16px; outline: none; font-weight: 500;
+    width: 100%; padding: 16px; background: var(--bg-color); 
+    border: 2px solid rgba(59, 130, 246, 0.4); /* Четкая синяя обводка кликабельности */
+    border-radius: var(--radius-md); box-shadow: var(--neu-out); font-size: 16px; 
+    outline: none; font-weight: 600; color: var(--text-dark);
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+.neu-select:focus {
+    border-color: var(--primary-blue);
+    box-shadow: inset 2px 2px 5px var(--shadow-dark);
 }
 
 .time-input-group { display: flex; align-items: center; justify-content: space-between; background: var(--bg-color); box-shadow: var(--neu-in); border-radius: var(--radius-md); padding: 8px; }
-.time-btn { width: 44px; height: 44px; border: none; background: var(--bg-color); box-shadow: var(--neu-out-sm); border-radius: 8px; font-size: 20px; cursor: pointer; }
+.time-btn { width: 44px; height: 44px; border: none; background: var(--bg-color); box-shadow: var(--neu-out-sm); border-radius: 8px; font-size: 20px; cursor: pointer; color: var(--text-dark); }
 .time-btn:active { box-shadow: var(--neu-in); }
-.time-value { font-size: 32px; font-weight: 800; }
+.time-value { font-size: 32px; font-weight: 800; color: var(--text-dark); }
 .time-suffix { font-size: 14px; color: var(--text-muted); font-weight: 600; }
 .hint-text { font-size: 12px; color: var(--text-muted); text-align: center; margin-top: 10px; margin-bottom: 20px; }
 
 /* ЭКРАН 2: МАГАЗИН */
 .shop-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
 .shop-header h1 { font-style: italic; font-weight: 800; font-size: 22px; color: var(--text-muted); text-transform: uppercase; }
-.coin-badge { background: var(--bg-color); box-shadow: var(--neu-in); padding: 8px 16px; border-radius: 20px; display: flex; gap: 8px; font-weight: 700; }
+.coin-badge { background: var(--bg-color); box-shadow: var(--neu-in); padding: 8px 16px; border-radius: 20px; display: flex; gap: 8px; font-weight: 700; color: var(--text-dark); }
 .coin-icon { color: var(--gold); }
 
 .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -94,32 +105,33 @@ main::-webkit-scrollbar { display: none; }
 .shop-item-card.full-width { grid-column: 1 / -1; flex-direction: row; align-items: center; gap: 16px; }
 
 .item-img { width: 100%; height: 120px; border-radius: var(--radius-md); margin-bottom: 12px; display: flex; justify-content: center; align-items: center; font-size: 48px; box-shadow: var(--neu-in); }
-.img-hookah { background: linear-gradient(135deg, #475569, #1E293B); }
-.img-sweets { background: linear-gradient(135deg, #FBCFE8, #F43F5E); }
-.img-relax { background: linear-gradient(135deg, #7DD3FC, #0284C7); width: 100px; height: 100px; margin-bottom: 0;}
+.img-hookah { background: linear-gradient(135deg, #1E293B, #0F172A); }
+.img-sweets { background: linear-gradient(135deg, #4C0519, #9F1239); }
+.img-relax { background: linear-gradient(135deg, #0C4A6E, #0369A1); width: 100px; height: 100px; margin-bottom: 0;}
 
 .badge-tag { background: var(--gold-gradient); color: white; font-size: 10px; font-weight: 700; padding: 4px 8px; border-radius: 4px; text-align: center; margin-bottom: 8px; }
-.item-title { font-size: 14px; font-weight: 800; margin-bottom: 4px; text-transform: uppercase;}
+.item-title { font-size: 14px; font-weight: 800; margin-bottom: 4px; text-transform: uppercase; color: var(--text-dark); }
 .item-desc { font-size: 11px; color: var(--text-muted); margin-bottom: 12px; flex: 1;}
 
-.btn-buy { width: 100%; padding: 10px; border: none; border-radius: 8px; background: var(--bg-color); box-shadow: var(--neu-out-sm); font-size: 12px; font-weight: 600; cursor: pointer; }
+.btn-buy { width: 100%; padding: 10px; border: none; border-radius: 8px; background: var(--bg-color); box-shadow: var(--neu-out-sm); font-size: 12px; font-weight: 600; cursor: pointer; color: var(--text-dark); }
 .btn-buy:active { box-shadow: var(--neu-in); }
 .item-status { font-size: 11px; color: #10B981; text-align: center; margin-top: 8px; font-weight: 500;}
 
 /* ЭКРАН 3: ИСТОРИЯ */
-.date-header { font-size: 16px; font-weight: 600; margin: 24px 0 12px 0; }
+.date-header { font-size: 16px; font-weight: 600; margin: 24px 0 12px 0; color: var(--text-dark); }
 .history-card { background: var(--bg-color); border-radius: var(--radius-md); box-shadow: var(--neu-out); padding: 16px; margin-bottom: 16px; position: relative; overflow: hidden; }
-.history-card.color-blue::before { content: ''; position: absolute; inset: 0; background: rgba(59, 130, 246, 0.05); }
-.history-card.color-green::before { content: ''; position: absolute; inset: 0; background: rgba(16, 185, 129, 0.05); }
-.history-card.color-gold::before { content: ''; position: absolute; inset: 0; background: rgba(245, 158, 11, 0.05); }
+.history-card.color-blue::before { content: ''; position: absolute; inset: 0; background: rgba(59, 130, 246, 0.1); }
+.history-card.color-green::before { content: ''; position: absolute; inset: 0; background: rgba(16, 185, 129, 0.1); }
+.history-card.color-gold::before { content: ''; position: absolute; inset: 0; background: rgba(245, 158, 11, 0.1); }
 
 .history-top { display: flex; justify-content: space-between; margin-bottom: 12px; position: relative; z-index: 1;}
 .history-title-wrap { display: flex; align-items: center; gap: 12px; }
 .history-icon { width: 40px; height: 40px; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 18px; box-shadow: var(--neu-in); }
-.history-title { font-size: 16px; font-weight: 700; }
+.history-title { font-size: 16px; font-weight: 700; color: var(--text-dark); }
 .history-desc { font-size: 12px; color: var(--text-muted); }
-.history-time { font-size: 14px; font-weight: 500; }
-.history-bottom { display: flex; justify-content: space-between; font-size: 13px; position: relative; z-index: 1; border-top: 1px solid rgba(0,0,0,0.05); padding-top: 8px;}
+.history-time { font-size: 14px; font-weight: 500; color: var(--text-dark); }
+.history-bottom { display: flex; justify-content: space-between; font-size: 13px; position: relative; z-index: 1; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px; color: var(--text-muted);}
+.history-val { font-weight: 600; color: var(--text-dark); }
 .history-gain { font-weight: 700; }
 .gain-xp { color: var(--primary-blue); }
 .gain-coins { color: var(--gold); }
@@ -129,18 +141,20 @@ main::-webkit-scrollbar { display: none; }
 .skill-card { background: var(--bg-color); border-radius: var(--radius-md); box-shadow: var(--neu-out); padding: 16px; }
 .skill-card.global { background: var(--primary-gradient); color: white; grid-column: 1 / -1; }
 .skill-card.global .text-muted { color: rgba(255,255,255,0.8); }
-.skill-card.global .progress-track { background: rgba(0,0,0,0.2); box-shadow: none;}
+.skill-card.global .progress-track { background: rgba(0,0,0,0.3); box-shadow: none;}
 .skill-card.global .progress-fill { background: white; }
 
 .skill-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;}
-.skill-name { font-size: 12px; font-weight: 700; text-transform: uppercase;}
-.skill-lvl { font-size: 16px; font-weight: 800;}
+.skill-name { font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-dark);}
+.skill-card.global .skill-name { color: white; }
+.skill-lvl { font-size: 16px; font-weight: 800; color: var(--text-dark);}
+.skill-card.global .skill-lvl { color: white; }
 .text-muted { font-size: 10px; color: var(--text-muted); margin-top: 4px;}
 
 /* НАВИГАЦИЯ */
 #bottom-nav {
     position: absolute; bottom: 0; left: 0; width: 100%; height: 85px;
-    background: var(--bg-color); box-shadow: 0 -10px 20px rgba(0,0,0,0.03);
+    background: var(--bg-color); box-shadow: 0 -10px 30px rgba(0,0,0,0.3);
     display: flex; justify-content: space-around; align-items: center;
     border-radius: 30px 30px 0 0; padding-bottom: 15px; z-index: 100;
 }
