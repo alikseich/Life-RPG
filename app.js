@@ -1,10 +1,10 @@
 // ==========================================
 // 1. БАЗА ДАННЫХ И ПАМЯТЬ СИСТЕМЫ
 // ==========================================
-const DB_KEY = 'liferpg_nexus_state_v5';
+const DB_KEY = 'liferpg_nexus_state_v6';
 
 const defaultState = {
-    user: { name: "Андрей", globalLevel: 1, xp: 0, xpMax: 100, coins: 0, totalMins: 0 },
+    user: { name: "Андрей", globalLevel: 1, xp: 0, xpMax: 100, totalMins: 0 },
     currentInput: { skill: "Спорт", mins: 15 },
     skills: {
         "Спорт": { level: 1, xpEarned: 0, icon: "fa-dumbbell", mins: 0 },
@@ -13,25 +13,32 @@ const defaultState = {
         "Вождение": { level: 1, xpEarned: 0, icon: "fa-car", mins: 0 },
         "Работа за ПК": { level: 1, xpEarned: 0, icon: "fa-desktop", mins: 0 },
     },
-    history: [
-        { id: 1, dateStr: "Системный лог", items: [
-            { type: "action", skill: "Инициализация системы", icon: "fa-power-off", time: "00:00", mins: 0, xp: 0, theme: "color-blue" }
-        ]}
-    ],
-    activeTab: 'activity'
+    history: [], // Изменено на плоский массив всех действий
+    activeTab: 'activity',
+    historyFilter: 'actions' // 'actions', 'days', 'weeks', 'months'
 };
 
-// Загрузка памяти при старте
 let state = JSON.parse(localStorage.getItem(DB_KEY)) || defaultState;
 
-// Миграция старых данных (чтобы не сломать игру, если ты уже прокачался)
-if (state.user.name !== "Андрей") state.user.name = "Андрей";
-if (state.user.totalMins === undefined) state.user.totalMins = 0;
-for (let sk in state.skills) {
-    if (state.skills[sk].mins === undefined) state.skills[sk].mins = 0;
+// Скрипт миграции старых данных (Чистка от монет и магазина)
+if (state.user.coins !== undefined) delete state.user.coins;
+if (!Array.isArray(state.history) || (state.history.length > 0 && state.history[0].dateStr)) {
+    // Конвертация старой структуры истории в новую плоскую с таймстемпами
+    let flatHistory = [];
+    state.history.forEach(group => {
+        if(group.items) {
+            group.items.forEach(item => {
+                if (item.type === 'action') {
+                    if(!item.timestamp) item.timestamp = Date.now(); // Присваиваем текущее время старым записям
+                    flatHistory.push(item);
+                }
+            });
+        }
+    });
+    state.history = flatHistory;
 }
+if(!state.historyFilter) state.historyFilter = 'actions';
 
-// Функция жесткого сохранения прогресса
 function saveState() {
     localStorage.setItem(DB_KEY, JSON.stringify(state));
 }
@@ -55,86 +62,54 @@ function commitAction() {
     const skillName = document.getElementById('skill-selector').value;
     state.currentInput.skill = skillName;
     
-    // Формула генерации XP
     const earnedXP = Math.floor(mins * 0.8); 
     
-    // ЭКОНОМИКА И ВРЕМЯ
-    state.user.coins += earnedXP;
-    state.user.totalMins += mins; // Сохраняем глобальное время
-    
-    // Вектор 1: Прогресс Глобального уровня
+    // ВРЕМЯ И ОПЫТ
+    state.user.totalMins += mins;
     state.user.xp += earnedXP;
+    
     if (state.user.xp >= state.user.xpMax) {
         state.user.globalLevel += 1;
         state.user.xp = state.user.xp - state.user.xpMax;
         state.user.xpMax = state.user.globalLevel * 100;
-        state.user.coins += 100;
-        alert(`⚡ LEVEL UP!\nДостигнут Уровень ${state.user.globalLevel}. Награда: +100 бонусных монет!`);
+        alert(`⚡ LEVEL UP!\nДостигнут Уровень ${state.user.globalLevel}.`);
     }
 
-    // Вектор 2: Локальный навык
     if(!state.skills[skillName]) state.skills[skillName] = { level: 1, xpEarned: 0, icon: "fa-bolt", mins: 0 };
     state.skills[skillName].xpEarned += earnedXP;
-    state.skills[skillName].mins += mins; // Сохраняем локальное время
+    state.skills[skillName].mins += mins;
     
     if(state.skills[skillName].xpEarned >= 100) {
         state.skills[skillName].level += 1;
-        state.skills[skillName].xpEarned -= 100; // Исправлено для переноса остатка XP
-        state.user.coins += 25; 
+        state.skills[skillName].xpEarned -= 100;
     }
 
-    // Запись в Журнал
+    // Добавление новой записи в историю
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     
-    const newRecord = {
-        type: "action", skill: skillName, icon: state.skills[skillName].icon,
-        time: timeStr, mins: mins, xp: earnedXP, theme: "color-blue"
-    };
+    state.history.unshift({
+        type: "action",
+        skill: skillName,
+        icon: state.skills[skillName].icon,
+        time: timeStr,
+        mins: mins,
+        xp: earnedXP,
+        timestamp: now.getTime() // Точная метка времени для аналитики
+    });
 
-    if(state.history[0].dateStr !== "Сегодня") {
-        state.history.unshift({ id: Date.now(), dateStr: "Сегодня", items: [] });
-    }
-    state.history[0].items.unshift(newRecord);
-
-    // СОХРАНЕНИЕ ПАМЯТИ
     saveState();
 
     const feedback = document.getElementById('action-feedback');
-    feedback.innerHTML = `Начислено: <strong>+${earnedXP} XP</strong> & <strong>+${earnedXP} Монет</strong> мгновенно!`;
+    feedback.innerHTML = `Начислено: <strong>+${earnedXP} XP</strong>. Записано.`;
     feedback.style.color = "#10B981";
     
-    state.currentInput.mins = 15; // Возврат таймера
+    state.currentInput.mins = 15; 
     setTimeout(() => render(), 1500);
 }
 
-function buyReward(itemName, cost) {
-    if (state.user.coins >= cost) {
-        state.user.coins -= cost;
-        
-        const now = new Date();
-        const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-        
-        if(state.history[0].dateStr !== "Сегодня") {
-            state.history.unshift({ id: Date.now(), dateStr: "Сегодня", items: [] });
-        }
-        
-        state.history[0].items.unshift({
-            type: "shop", name: itemName,
-            icon: itemName === "Кальян" ? "fa-smoking" : (itemName === "Сладкое" ? "fa-candy-cane" : "fa-umbrella-beach"),
-            time: timeStr, cost: cost, theme: "color-gold"
-        });
-
-        saveState();
-        alert(`✅ Покупка успешна: ${itemName}.`);
-        render();
-    } else {
-        alert("❌ Недостаточно монет. Заработайте очки на вкладке Активность.");
-    }
-}
-
-// Защищенный скрипт навигации
 function switchTab(tabId) {
+    if (tabId === 'shop') tabId = 'activity'; // На случай кэшированных кликов
     state.activeTab = tabId;
     document.querySelectorAll('.nav-item').forEach(el => {
         el.classList.remove('active');
@@ -143,23 +118,76 @@ function switchTab(tabId) {
     render();
 }
 
+function setHistoryFilter(val) {
+    state.historyFilter = val;
+    saveState();
+    render();
+}
+
 // ==========================================
-// 3. РЕНДЕРИНГ ИНТЕРФЕЙСА (VIEW)
+// 3. АНАЛИТИКА (АГРЕГАТОР ИСТОРИИ)
+// ==========================================
+
+function getWeekKey(dateObj) {
+    const d = new Date(dateObj);
+    d.setHours(0,0,0,0);
+    // Находим понедельник текущей недели
+    const day = d.getDay() || 7; 
+    d.setDate(d.getDate() - day + 1);
+    
+    const end = new Date(d);
+    end.setDate(end.getDate() + 6);
+    
+    const fmt = (dt) => dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+    return `Неделя (${fmt(d)} - ${fmt(end)})`;
+}
+
+function aggregateHistory(period) {
+    let groups = {};
+    
+    state.history.forEach(item => {
+        let d = new Date(item.timestamp);
+        let key = "Неизвестно";
+        
+        if (period === 'days') {
+            key = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+        } else if (period === 'weeks') {
+            key = getWeekKey(d);
+        } else if (period === 'months') {
+            key = d.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
+        }
+
+        if (!groups[key]) {
+            groups[key] = { xp: 0, mins: 0, skills: {} };
+        }
+        
+        groups[key].xp += item.xp;
+        groups[key].mins += item.mins;
+        
+        if (!groups[key].skills[item.skill]) {
+            groups[key].skills[item.skill] = { mins: 0, icon: item.icon };
+        }
+        groups[key].skills[item.skill].mins += item.mins;
+    });
+
+    return groups;
+}
+
+// ==========================================
+// 4. РЕНДЕРИНГ ИНТЕРФЕЙСА (VIEW)
 // ==========================================
 
 function getProgressPct() { return Math.min(100, (state.user.xp / state.user.xpMax) * 100); }
 function formatTime(mins) { return `${mins} мин = ${Math.floor(mins/60)}ч ${mins%60}мин`; }
-
-// Компактный формат для карточек прогресса
-function formatTimeShort(mins) { return `${Math.floor(mins/60)}ч ${mins%60}мин`; }
+function formatTimeShort(mins) { return `${Math.floor(mins/60)}ч ${mins%60}м`; }
 
 function render() {
     const root = document.getElementById('view-root');
     switch(state.activeTab) {
         case 'activity': root.innerHTML = renderActivity(); break;
-        case 'shop': root.innerHTML = renderShop(); break;
         case 'history': root.innerHTML = renderHistory(); break;
         case 'progress': root.innerHTML = renderProgress(); break;
+        default: root.innerHTML = renderActivity(); break;
     }
 }
 
@@ -170,10 +198,9 @@ function renderActivity() {
             <div class="user-profile">
                 <div class="avatar">👨‍💻</div><h1 class="title-h1" style="margin:0;">Привет, ${state.user.name}!</h1>
             </div>
-            <div class="wallet-btn"><i class="fa-solid fa-wallet"></i></div>
         </div>
         <div class="neu-card">
-            <div class="level-header"><span>Общий Уровень: <strong>${state.user.globalLevel}</strong></span><span><strong>${state.user.coins}</strong> <i class="fa-solid fa-coins coin-icon"></i></span></div>
+            <div class="level-header"><span>Общий Уровень: <strong>${state.user.globalLevel}</strong></span></div>
             <div class="progress-track"><div class="progress-fill" style="width: ${getProgressPct()}%"></div></div>
             <div class="level-stats"><span>${Math.round(getProgressPct())}%</span><span>${state.user.xp} / ${state.user.xpMax} XP</span></div>
         </div>
@@ -191,61 +218,92 @@ function renderActivity() {
                 <div class="time-suffix">МИН <i class="fa-regular fa-clock"></i></div>
             </div>
         </div>
-        <div class="hint-text">${formatTime(state.currentInput.mins)} | Начислим XP и Монеты</div>
-        <button class="btn-primary" onclick="commitAction()"><i class="fa-solid fa-check-circle"></i> Выполнил!</button>
+        <div class="hint-text">${formatTime(state.currentInput.mins)}</div>
+        <button class="btn-primary" onclick="commitAction()"><i class="fa-solid fa-check-circle"></i> Зафиксировать!</button>
         <div id="action-feedback" class="hint-text" style="margin-top:16px;"></div>
     `;
 }
 
-function renderShop() {
-    return `
-        <div class="shop-header"><h1>Магазин Наград</h1><div class="coin-badge"><span>${state.user.coins}</span><i class="fa-solid fa-coins coin-icon"></i></div></div>
-        <div class="shop-grid">
-            <div class="shop-item-card">
-                <div class="item-img img-hookah">💨</div><div class="badge-tag">БЕЗ КУЛДАУНА</div>
-                <div class="item-title">Кальян</div><div class="item-desc">Премиум табак. Без ограничений.</div>
-                <button class="btn-buy" onclick="buyReward('Кальян', 800)">Купить за 800 <i class="fa-solid fa-coins" style="color:var(--gold)"></i></button>
-            </div>
-            <div class="shop-item-card">
-                <div class="item-img img-sweets">🍬</div><div class="item-title" style="margin-top:8px">Сладкое</div>
-                <div class="item-desc">Набор десертов. Без чувства вины.</div>
-                <button class="btn-buy" onclick="buyReward('Сладкое', 150)">Купить за 150 <i class="fa-solid fa-coins" style="color:var(--gold)"></i></button>
-            </div>
-            <div class="shop-item-card full-width">
-                <div class="item-img img-relax">🏝️</div>
-                <div style="flex:1">
-                    <div class="item-title">ОТДЫХ</div><div class="item-desc">Целый день полной свободы без рутины.</div>
-                    <button class="btn-buy" onclick="buyReward('Отдых', 1500)">Купить за 1500 <i class="fa-solid fa-coins" style="color:var(--gold)"></i></button>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
 function renderHistory() {
-    // ЗАГОЛОВОК ИЗМЕНЕН ПО ТРЕБОВАНИЮ
-    let html = `<h1 class="title-h1" style="text-align:center; font-size: 20px;">История действий и покупок</h1>`;
-    state.history.forEach(group => {
-        html += `<div class="date-header">${group.dateStr}</div>`;
-        group.items.forEach(item => {
-            if(item.type === 'action') {
-                html += `<div class="history-card ${item.theme}"><div class="history-top"><div class="history-title-wrap"><div class="history-icon" style="color:var(--primary-blue)"><i class="fa-solid ${item.icon}"></i></div><div><div class="history-title">${item.skill}</div><div class="history-desc">Выполнение</div></div></div><div class="history-time">${item.time}</div></div><div class="history-bottom"><span>Затрачено: <span class="history-val">${item.mins} минут</span></span><span class="history-gain gain-xp">+${item.xp} XP / +${item.xp} Монет</span></div></div>`;
-            } else {
-                html += `<div class="history-card ${item.theme}"><div class="history-top"><div class="history-title-wrap"><div class="history-icon" style="color:var(--gold)"><i class="fa-solid ${item.icon}"></i></div><div><div class="history-title">${item.name}</div><div class="history-desc">Покупка</div></div></div><div class="history-time">${item.time}</div></div><div class="history-bottom"><span>Списание</span><span class="history-gain gain-coins">-${item.cost} Монет</span></div></div>`;
+    let html = `<h1 class="title-h1" style="text-align:center; font-size: 20px;">История действий</h1>`;
+    
+    // Блок управления фильтрами
+    html += `
+    <div class="history-controls">
+        <select class="history-select" onchange="setHistoryFilter(this.value)">
+            <option value="actions" ${state.historyFilter === 'actions' ? 'selected' : ''}>Список действий</option>
+            <option value="days" ${state.historyFilter === 'days' ? 'selected' : ''}>Аналитика по Дням</option>
+            <option value="weeks" ${state.historyFilter === 'weeks' ? 'selected' : ''}>Аналитика по Неделям</option>
+            <option value="months" ${state.historyFilter === 'months' ? 'selected' : ''}>Аналитика по Месяцам</option>
+        </select>
+    </div>`;
+
+    if (state.historyFilter === 'actions') {
+        // Отрисовка стокового списка действий
+        if(state.history.length === 0) return html + `<div style="text-align:center; color:gray; margin-top:40px;">История пуста</div>`;
+        
+        // Группировка чисто визуально по дате (как было)
+        let lastDate = "";
+        state.history.forEach(item => {
+            let d = new Date(item.timestamp);
+            let dStr = d.toLocaleDateString('ru-RU', {day:'numeric', month:'long'});
+            if(dStr !== lastDate) {
+                html += `<div class="date-header">${dStr}</div>`;
+                lastDate = dStr;
             }
+            html += `
+            <div class="history-card">
+                <div class="history-top">
+                    <div class="history-title-wrap">
+                        <div class="history-icon"><i class="fa-solid ${item.icon}"></i></div>
+                        <div><div class="history-title">${item.skill}</div><div class="history-desc">Выполнение</div></div>
+                    </div>
+                    <div class="history-time">${item.time}</div>
+                </div>
+                <div class="history-bottom">
+                    <span>Затрачено: <span class="history-val">${item.mins} минут</span></span>
+                    <span class="gain-xp">+${item.xp} XP</span>
+                </div>
+            </div>`;
         });
-    });
+    } else {
+        // Отрисовка агрегации (Дни/Недели/Месяцы)
+        const groups = aggregateHistory(state.historyFilter);
+        const keys = Object.keys(groups); // Сортировка не идеальна, но ключи идут в порядке добавления
+        
+        if(keys.length === 0) return html + `<div style="text-align:center; color:gray; margin-top:40px;">Нет данных</div>`;
+
+        keys.forEach(key => {
+            const g = groups[key];
+            html += `
+            <div class="agg-card">
+                <div class="agg-header">
+                    <span class="agg-title">${key}</span>
+                    <span class="agg-xp">+${g.xp} XP</span>
+                </div>
+                <div class="agg-total-time">Всего времени: <span style="color:var(--text-dark)">${formatTimeShort(g.mins)}</span></div>
+                <div class="agg-skills-list">`;
+            
+            for(let sk in g.skills) {
+                html += `
+                    <div class="agg-skill-row">
+                        <span class="agg-skill-name"><i class="fa-solid ${g.skills[sk].icon}"></i> ${sk}</span>
+                        <span class="history-val">${formatTimeShort(g.skills[sk].mins)}</span>
+                    </div>`;
+            }
+            html += `</div></div>`;
+        });
+    }
+
     return html;
 }
 
 function renderProgress() {
-    // ДОБАВЛЕНО ОБЩЕЕ ВРЕМЯ РАЗВИТИЯ
-    let html = `<h1 class="title-h1" style="text-align:center; font-size:16px;">ПРОГРЕСС И АНАЛИТИКА</h1>
+    let html = `
+    <h1 class="title-h1" style="text-align:center; font-size:16px;">ПРОГРЕСС И АНАЛИТИКА</h1>
     <div class="skills-grid">
         <div class="skill-card global">
-            <div class="skill-header">
-                <span class="skill-name">Общий Уровень 🥇</span>
-            </div>
+            <div class="skill-header"><span class="skill-name">Общий Уровень 🥇</span></div>
             <div class="skill-lvl">Lvl ${state.user.globalLevel}</div>
             <div class="progress-track"><div class="progress-fill" style="width: ${getProgressPct()}%"></div></div>
             <div style="font-size:12px; margin-top:8px; opacity:0.9;">Общее время развития: <strong style="color:#FFF;">${formatTimeShort(state.user.totalMins)}</strong></div>
@@ -256,7 +314,6 @@ function renderProgress() {
     for(let sk in state.skills) {
         let p = state.skills[sk];
         let c = colors[i % colors.length];
-        // ДОБАВЛЕНО ЛОКАЛЬНОЕ ВРЕМЯ В КАРТОЧКУ НАВЫКА
         html += `
         <div class="skill-card">
             <div class="skill-header">
@@ -272,12 +329,8 @@ function renderProgress() {
     return html;
 }
 
-// Запуск интерфейса
 window.onload = () => { render(); };
 
-// ==========================================
-// 4. ИНТЕГРАЦИЯ PWA
-// ==========================================
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/life-rpg/sw.js')
     .then(() => console.log("LifeRPG Nexus Core Active"));
