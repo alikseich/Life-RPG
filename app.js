@@ -1,7 +1,7 @@
 // ==========================================
 // 1. БАЗА ДАННЫХ, ПАМЯТЬ И ОБЛАЧНАЯ СИНХРОНИЗАЦИЯ
 // ==========================================
-const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbxJL--R48vxeY4Ve85iDjogUI8K4bdQidHjcZePwQxDWL7x9v5PgDZWzkCgJuc_rp9D2g/exec";
+const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbw_rIlsClRoj3WDil2fUnJFU_t7U-fcrPYF0Qkb5QQoSun38slnsM3sZhXcCyk4yIwNVw/exec";
 
 const DB_KEY = 'liferpg_nexus_state_v6';
 
@@ -73,16 +73,19 @@ async function syncWithCloud() {
 }
 syncWithCloud();
 
-// Сохранение и отправка на сервер (С пробитием защиты Apple)
+// Сохранение и отправка на сервер (Троянский протокол)
 function saveState() {
+    // Сохраняем в локальную память телефона
     localStorage.setItem(DB_KEY, JSON.stringify(state));
+    
+    // Маскируем данные под обычную HTML-форму (Safari это пропустит 100%)
+    const formData = "data=" + encodeURIComponent(JSON.stringify(state));
     
     fetch(CLOUD_API_URL, {
         method: 'POST',
-        mode: 'no-cors', // <-- ВОТ ЭТА КОМАНДА ПРОБИВАЕТ БЛОКИРОВКУ
-        body: JSON.stringify(state),
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' } 
-    }).catch(e => console.log("⚠️ Ошибка сети"));
+        body: formData,
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' } 
+    }).catch(e => console.log("⚠️ Ошибка синхронизации"));
 }
 
 // ==========================================
