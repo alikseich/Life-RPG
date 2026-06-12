@@ -1,7 +1,7 @@
 // ==========================================
 // 1. БАЗА ДАННЫХ, ПАМЯТЬ И ОБЛАЧНАЯ СИНХРОНИЗАЦИЯ
 // ==========================================
-const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbxuRLQIbcytnHTnYiGUtfoo6OBPf73wxsidUE3a9N1RY8Kie_6We-YoE2UGOIerA8u-ag/exec";
+const CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbxJL--R48vxeY4Ve85iDjogUI8K4bdQidHjcZePwQxDWL7x9v5PgDZWzkCgJuc_rp9D2g/exec";
 
 const DB_KEY = 'liferpg_nexus_state_v6';
 
@@ -73,15 +73,16 @@ async function syncWithCloud() {
 }
 syncWithCloud();
 
-// Сохранение и отправка на сервер
+// Сохранение и отправка на сервер (С пробитием защиты Apple)
 function saveState() {
     localStorage.setItem(DB_KEY, JSON.stringify(state));
     
     fetch(CLOUD_API_URL, {
         method: 'POST',
+        mode: 'no-cors', // <-- ВОТ ЭТА КОМАНДА ПРОБИВАЕТ БЛОКИРОВКУ
         body: JSON.stringify(state),
         headers: { 'Content-Type': 'text/plain;charset=utf-8' } 
-    }).catch(e => console.log("⚠️ Нет сети. Данные сохранены только локально."));
+    }).catch(e => console.log("⚠️ Ошибка сети"));
 }
 
 // ==========================================
